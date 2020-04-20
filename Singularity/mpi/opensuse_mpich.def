@@ -1,0 +1,37 @@
+Bootstrap: docker 
+From: opensuse/leap:latest
+Stage: build
+
+%files
+   /home/markc/Documents/Containers/mpi_only/mpi_test.c /mpi_test.c
+   /home/markc/Documents/Containers/mpi_only/mpi_hello.f90 /mpi_hello.f90
+
+%post
+#    export ENV DEBIAN_FRONTEND=noninteractive TZ=US/Pacific
+#    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+    export MPICH_VERSION=3.1.4
+
+    #
+    # Install software dependencies
+    #-----------------------------------------------------------------------
+    zypper -n install gcc gcc-fortran gcc-c++ wget make gzip tar zlib zlib-devel-static
+
+    ##
+    ## Install MPI
+    ##--------------
+    wget -q http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz
+    tar xzf mpich-${MPICH_VERSION}.tar.gz
+    cd mpich-${MPICH_VERSION}
+    ./configure --enable-fast=all,O3 --enable-cxx --enable-fortran --enable-g=none
+    make -j4
+    make install
+    ldconfig
+    cd ..
+    rm -rf mpich-${MPICH_VERSION}*
+
+    ##
+    ## Build the MPI test executables
+    ##--------------------------------
+    mkdir -p /myapps/mpi_tests
+    mpicc -o /myapps/mpi_tests/mpi_test.x mpi_test.c
+    mpif90 -o /myapps/mpi_tests/mpi_hello.x mpi_hello.f90

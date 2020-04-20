@@ -1,0 +1,85 @@
+Bootstrap: localimage 
+From: /home/markc/Documents/Containers/mpi_only/leap_mpich3.14.sif 
+
+%files
+    /home/markc/Downloads/hdf5-1.12.0.tar.gz /hdf5-1.12.0.tar.gz
+    /home/markc/Downloads/netcdf-c-4.7.4.tar.gz /netcdf-c-4.7.4.tar.gz
+    /home/markc/Downloads/netcdf-fortran-4.5.2.tar.gz /netcdf-fortran-4.5.2.tar.gz
+    /home/markc/Documents/fv3gfs-fortran/FMS /FMS
+
+%post
+    ##
+    ## Install software dependencies
+    ##--------------------------------
+    zypper -n install git m4 libtool autoconf bats blas-devel-static lapack-devel-static 
+
+    ##
+    ## Install the HDF5 libraries
+    ##----------------------------
+    mkdir -p /myapps/hdf5
+
+    export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+    tar xzf hdf5-1.12.0.tar.gz
+    cd hdf5-1.12.0
+    ./configure --prefix=/myapps/hdf5 --enable-fortran --with-zlib
+    make -j4 install
+    cd .. && rm -rf hdf5-1.12.0*
+    export LD_LIBRARY_PATH=/myapps/hdf5/lib:$LD_LIBRARY_PATH
+
+    ##
+    ## Install the NetCDF libraries
+    ##------------------------------
+    tar xzf netcdf-c-4.7.4.tar.gz
+    mkdir -p /myapps/netcdf
+
+    cd netcdf-c-4.7.4
+    CPPFLAGS="-I/myapps/hdf5/include" LDFLAGS="-L/myapps/hdf5/lib" ./configure --disable-dap --prefix=/myapps/netcdf
+    make -j4 install
+    cd .. &&  rm -rf /netcdf-c-4.7.4*
+    export LD_LIBRARY_PATH=/myapps/netcdf/lib:$LD_LIBRARY_PATH
+
+    tar xzf netcdf-fortran-4.5.2.tar.gz
+    cd netcdf-fortran-4.5.2
+    CPPFLAGS="-I/myapps/hdf5/include -I/myapps/netcdf/include" LDFLAGS="-L/myapps/hdf5/lib -L/myapps/netcdf/lib" ./configure --prefix=/myapps/netcdf
+    make -j4 install
+    cd .. && rm -rf netcdf-fortran-4.5.2*
+
+    ##
+    ## Build the FMS modules and libraries
+    ##-------------------------------------
+    export FMS_DIR=/myapps/fms
+    export CC=mpicc FC=mpif90 F77=mpif77 LDFLAGS="-L/myapps/hdf5/lib -L/myapps/netcdf/lib" LOG_DRIVER_FLAGS="--comments"
+    export CPPFLAGS="-I/myapps/hdf5/include -I/myapps/netcdf/include -Duse_LARGEFILE -DMAXFIELDMETHODS_=500"
+    export FCFLAGS="-O2 -fcray-pointer -Waliasing -ffree-line-length-none -fno-range-check -fdefault-real-8 -fdefault-double-8"
+
+    mkdir -p $FMS_DIR
+    cd /FMS && autoreconf --install
+    ./configure --prefix=${FMS_DIR} && make -j4
+    make install
+    cd .. && rm -rf FMS
+
+    ##
+    ## Build the EMSF modules and libraries
+    ##--------------------------------------
+    export CXX=mpicxx ESMF_DIR=/esmf ESMF_INSTALL_PREFIX=/myapps/esmf ESMF_NETCDF_INCLUDE="-I/myapps/hdf5/include -I/myapps/netcdf/include"
+    export ESMF_NETCDF_LIBS="-L/myapps/netcdf/lib -lnetcdf -lnetcdff -L/myapps/hdf5/lib -lhdf5_fortran -lhdf5" ESMF_BOPT=O3
+
+    git clone -b ESMF_8_0_0 --depth 1 https://git.code.sf.net/p/esmf/esmf $ESMF_DIR
+    export ESMF_OPENMP=OFF
+    cd $ESMF_DIR && make lib -j4
+
+    mkdir -p ${ESMF_INSTALL_PREFIX}
+    make install && make installcheck
+    cd .. && rm -rf esmf
+
+    ##
+    ## Install the NCEP libraries
+    ##----------------------------
+    mkdir -p /myapps/NCEP
+
+    git config --global http.sslverify false
+    git clone https://github.com/NCAR/NCEPlibs.git
+    cd NCEPlibs
+    git checkout 3da51e139d5cd731c9fc27f39d88cb4e1328212b
+    echo "y" | ./make_ncep_libs.sh -s linux -c gnu -d /myapps/NCEP -o 0
+    cd .. && rm -rf NCEPlibs

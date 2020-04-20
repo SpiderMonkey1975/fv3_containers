@@ -1,0 +1,34 @@
+Bootstrap: docker
+From: ubuntu:19.10
+
+%files
+   /home/markc/Documents/Containers/mpi_only/mpi_test.c /mpi_test.c 
+   /home/markc/Documents/Containers/mpi_only/mpi_hello.f90 /mpi_hello.f90
+
+%post
+    export MPICH_VERSION=3.3.2
+
+    ##
+    ## Install software dependencies
+    ##--------------------------------
+    apt-get update
+    apt-get install -y wget gcc gfortran g++ make 
+
+    ##
+    ## Install MPI
+    ##--------------
+    wget -q http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz 
+    tar xzf mpich-${MPICH_VERSION}.tar.gz
+    cd mpich-${MPICH_VERSION}
+    ./configure --enable-fast=all,O3 --enable-cxx --enable-fortran --enable-g=none
+    make -j4 install
+    ldconfig
+    cd ..
+    rm -rf mpich-${MPICH_VERSION}*
+
+    ##
+    ## Build the MPI test executables 
+    ##--------------------------------
+    mkdir -p /myapps/mpi_tests
+    mpicc -o /myapps/mpi_tests/mpi_test.x mpi_test.c
+    mpif90 -o /myapps/mpi_tests/mpi_hello.x mpi_hello.f90

@@ -1,0 +1,42 @@
+Bootstrap: docker
+From: ubuntu:18.04
+
+%files
+   /home/markc/Documents/Containers/mpi_only/mpi_test.c /mpi_test.c 
+   /home/markc/Documents/Containers/mpi_only/mpi_hello.f90 /mpi_hello.f90
+
+%post
+    export MPICH_VERSION=3.1.4
+
+    ##
+    ## Install software dependencies
+    ##--------------------------------
+    apt-get update
+    apt-get install -y wget make software-properties-common
+    rm -rf /var/lib/apt/lists/*
+
+    add-apt-repository ppa:ubuntu-toolchain-r/test
+    apt-get update 
+    apt-get install -y gcc-9 gfortran-9 g++-9 
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 \
+                        --slave /usr/bin/g++ g++ /usr/bin/g++-9 \
+                        --slave /usr/bin/gfortran gfortran /usr/bin/gfortran-9
+
+    ##
+    ## Install MPI
+    ##--------------
+    wget -q http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz 
+    tar xzf mpich-${MPICH_VERSION}.tar.gz
+    cd mpich-${MPICH_VERSION}
+    ./configure --enable-fast=all,O3 --enable-cxx --enable-fortran --enable-g=none
+    make -j4 install
+    ldconfig
+    cd ..
+    rm -rf mpich-${MPICH_VERSION}*
+
+    ##
+    ## Build the MPI test executables 
+    ##--------------------------------
+    mkdir -p /myapps/mpi_tests
+    mpicc -o /myapps/mpi_tests/mpi_test.x mpi_test.c
+    mpif90 -o /myapps/mpi_tests/mpi_hello.x mpi_hello.f90
