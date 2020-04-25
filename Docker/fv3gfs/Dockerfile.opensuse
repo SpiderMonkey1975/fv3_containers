@@ -1,8 +1,8 @@
-FROM opensuse/tumbleweed:latest
+FROM adeytown75/fv3-nuclear-testsite:mpi-tumbleweed-mpich3.14 
 
 ENV DEBIAN_FRONTEND noninteractive 
 ENV TZ US/Pacific
-ENV PATH /myapps/hdf5/bin:/myapps/netcdf/bin:/myapps/mpi/bin:$PATH
+ENV PATH /myapps/hdf5/bin:/myapps/netcdf/bin:$PATH
 ENV LD_LIBRARY_PATH /myapps/mpi/lib:/myapps/hdf5/lib:/myapps/netcdf/lib:$LD_LIBRARY_PATH
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -11,19 +11,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 ## Install software dependencies
 ##
 
-RUN zypper -n install gcc gcc-fortran wget make gzip tar git zlib zlib-devel-static m4 libtool autoconf  
-
-##
-## Install MPI
-##
-
-ARG MPICH_VERSION=3.1.4
-RUN wget -q http://www.mpich.org/static/downloads/3.1.4/mpich-$MPICH_VERSION.tar.gz && \
-    tar xzf mpich-$MPICH_VERSION.tar.gz && \
-    cd mpich-$MPICH_VERSION && \
-    ./configure --prefix=/myapps/mpi --disable-cxx --enable-fortran --disable-wrapper-rpath && \
-    make -j4 install && ldconfig && \
-    cd .. && rm -rf mpich-$MPICH_VERSION*
+RUN zypper -n install git zlib zlib-devel-static m4 libtool autoconf  
 
 ##
 ## Build the NCEP libraries
@@ -31,10 +19,10 @@ RUN wget -q http://www.mpich.org/static/downloads/3.1.4/mpich-$MPICH_VERSION.tar
 
 RUN git config --global http.sslverify false && \
     git clone https://github.com/NCAR/NCEPlibs.git && \ 
-    mkdir /myapps/NCEPlibs && \
+    mkdir /myapps/NCEP && \
     cd NCEPlibs && \
     git checkout 3da51e139d5cd731c9fc27f39d88cb4e1328212b && \
-    echo "y" | ./make_ncep_libs.sh -s linux -c gnu -d /myapps/NCEPlibs -o 0 && \
+    echo "y" | ./make_ncep_libs.sh -s linux -c gnu -d /myapps/NCEP -o 1 && \
     cd .. && rm -rf NCEPlibs
 
 ##
@@ -44,7 +32,7 @@ RUN git config --global http.sslverify false && \
 COPY hdf5-1.12.0.tar.gz /hdf5-1.12.0.tar.gz
 RUN tar xzf hdf5-1.12.0.tar.gz && \
     cd hdf5-1.12.0 && \
-    ./configure --prefix=/myapps/hdf5 --enable-fortran --disable-tools --enable-build-mode=production --enable-shared && \
+    ./configure --enable-fortran --disable-tools --enable-build-mode=production --enable-shared && \
     make -j4 install && \ 
     cd .. && rm -rf hdf5-1.12.0*
 
@@ -57,13 +45,13 @@ COPY netcdf-fortran-4.5.2.tar.gz /netcdf-fortran-4.5.2.tar.gz
 
 RUN tar xzf netcdf-c-4.7.4.tar.gz && \
     cd netcdf-c-4.7.4 && \
-    CPPFLAGS="-I/myapps/hdf5/include" LDFLAGS="-L/myapps/hdf5/lib -lhdf5_fortran -lhdf5" ./configure --prefix=/myapps/netcdf --disable-dap --disable-utilities && \
+    LDFLAGS="-lhdf5_fortran -lhdf5" ./configure --disable-dap --disable-utilities && \
     make -j4 install && \
     cd .. && rm -rf netcdf-c-4.7.4* 
 
 RUN tar xzf netcdf-fortran-4.5.2.tar.gz && \
     cd netcdf-fortran-4.5.2 && \
-    CPPFLAGS="-I/myapps/hdf5/include -I/myapps/netcdf/include" LDFLAGS="-L/myapps/hdf5/lib -lhdf5_fortran -lhdf5 -L/myapps/netcdf/lib -lnetcdf" ./configure --prefix=/myapps/netcdf && \
+    LDFLAGS="-lhdf5_fortran -lhdf5 -lnetcdf" ./configure && \
     make -j4 install && \
     cd .. && rm -rf netcdf-fortran-4.5.2*
 

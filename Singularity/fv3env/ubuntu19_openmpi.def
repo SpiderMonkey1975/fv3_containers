@@ -1,0 +1,55 @@
+Bootstrap: localimage 
+From: /home/markc/Documents/fv3_containers/Singularity/mpi/ubuntu19_openmpi3.sif 
+
+%files
+    /home/markc/Documents/fv3gfs-fortran/FMS /FMS
+
+%post
+    ##
+    ## Install software dependencies
+    ##--------------------------------
+    apt-get update
+    apt-get install -y git libhdf5-dev libnetcdf-dev libnetcdff-dev libblas-dev liblapack-dev autoconf m4 libtool bats 
+
+    ##
+    ## Install the NCEP libraries
+    ##----------------------------
+    mkdir -p /myapps/NCEP
+
+    git config --global http.sslverify false
+    git clone https://github.com/NCAR/NCEPlibs.git
+    cd NCEPlibs
+    git checkout 3da51e139d5cd731c9fc27f39d88cb4e1328212b
+    echo "y" | ./make_ncep_libs.sh -s linux -c gnu -d /myapps/NCEP -o 1
+    cp *.a /myapps/NCEP/lib/
+    cd .. && rm -rf NCEPlibs
+
+    ##
+    ## Build the FMS modules and libraries
+    ##-------------------------------------
+    export FMS_DIR=/myapps/fms
+    export CC=mpicc FC=mpif90 F77=mpif77 LDFLAGS="-L/usr/lib/x86_64-linux-gnu -lnetcdf -lnetcdff" LOG_DRIVER_FLAGS="--comments"
+    export CPPFLAGS="-I/usr/include -Duse_LARGEFILE -DMAXFIELDMETHODS_=500"
+    export FCFLAGS="-O2 -fcray-pointer -Waliasing -ffree-line-length-none -fno-range-check -fdefault-real-8 -fdefault-double-8 -fopenmp"
+
+    cd /FMS && autoreconf --install
+    ./configure --disable-fortran-flag-setting  
+    make 
+    make install
+    cd .. && rm -rf FMS
+
+    ##
+    ## Build the EMSF modules and libraries
+    ##--------------------------------------
+    export CXX=mpicxx CC=mpicc FC=mpif90 F77=mpif77 ESMF_DIR=/esmf 
+    export ESMF_INSTALL_PREFIX=/usr/local
+    export ESMF_NETCDF_INCLUDE=/usr/include
+    export ESMF_NETCDF_LIBS="-L/usr/lib/x86_64-linux-gnu -lnetcdf -lnetcdff" ESMF_BOPT=O3
+    export ESMF_OPENMP=ON 
+    export ESMF_INSTALL_MODDIR=include ESMF_INSTALL_LIBDIR=lib
+
+    git clone -b ESMF_8_0_0 --depth 1 https://git.code.sf.net/p/esmf/esmf
+    cd $ESMF_DIR && make lib -j4
+    make -j4 lib 
+    make install
+    cd .. && rm -rf esmf

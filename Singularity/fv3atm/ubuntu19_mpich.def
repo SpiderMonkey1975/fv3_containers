@@ -1,12 +1,12 @@
 Bootstrap: localimage 
-From: /home/markc/Documents/Containers/fv3env/ubuntu19_mpich3.32.sif
+From: /home/markc/Documents/fv3_containers/Singularity/fv3env/ubuntu19_mpich3.14.sif
 
 %labels
     Author MarkC@Vulcan.com
     Label FV3atm Container
     OS Ubuntu
     Compiler GNU-9
-    MPI MPICH 3.34    
+    MPI MPICH 3.1.4    
 
 %help
     This Singularity definition contains build instructions for the GFDL Finite Volume
@@ -17,7 +17,7 @@ From: /home/markc/Documents/Containers/fv3env/ubuntu19_mpich3.32.sif
 
     Some useful commands are:
 
-    sudo singularity build <mysingularity_name>.sif fv3atm_ubuntu_mpich3.32.def
+    sudo singularity build <mysingularity_name>.sif fv3atm_ubuntu_mpich3.14.def
     This command builds an immutable Singularity container in the new Singularity Image Format (SIF)
 
     singularity run <mysingularity_name>.sif bash
@@ -35,21 +35,21 @@ From: /home/markc/Documents/Containers/fv3env/ubuntu19_mpich3.32.sif
 
 %post
     ##
+    ## Set the build environment
+    ##---------------------------
+    cd /FV3
+    . /FV3/env.linux_gnu
+    echo 5 | ./configure
+
+    ##
     ## Build the FV3 executable
     ##--------------------------
-    export FMS_DIR=/myapps/fms
-    export ESMF_INC="-I/myapps/esmf/include -I/myapps/esmf/mod/modO3/Linux.gfortran.64.mpiuni.default/"
-    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/myapps/esmf/lib/libO3/Linux.gfortran.64.mpiuni.default/:/myapps/fms/lib
-    export NETCDF_DIR=/usr NCEP_DIR=/myapps/NCEP
-
-    cd /FV3
-    cp conf/configure.fv3.linux_gnu conf/configure.fv3
-    make clean_no_dycore
-    make libs_no_dycore -j4
-    cd atmos_cubed_sphere && make clean
-    cd .. && make -j4
+    . /FV3/compile
     mkdir -p /myapps/FV3
-    mv fv3.exe /myapps/FV3/
+    mv *.exe /myapps/FV3/
+    
+    cd ..
+    rm -rf FV3 stochastic_physics 
 
 %environment
-    export LD_LIBRARY_PATH=/myapps/esmf/lib/libO3/Linux.gfortran.64.mpiuni.default:/myapps/fms/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=/myapps/esmf/lib/libO3/Linux.gfortran.64.mpiuni.default:$LD_LIBRARY_PATH

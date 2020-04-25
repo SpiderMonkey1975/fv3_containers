@@ -1,5 +1,5 @@
 Bootstrap: localimage 
-From: /home/markc/Documents/Containers/fv3env/tumbleweed_mpich3.14.sif
+From: /home/markc/Documents/fv3_containers/Singularity/fv3env/tumbleweed_mpich3.14.sif
 
 %labels
     Author MarkC@Vulcan.com
@@ -38,12 +38,14 @@ From: /home/markc/Documents/Containers/fv3env/tumbleweed_mpich3.14.sif
     ## Build the FV3 executable
     ##--------------------------
     export FMS_DIR=/myapps/fms
+    export ESMF_DIR=/myapps/esmf
     export ESMF_INC="-I/myapps/esmf/include -I/myapps/esmf/mod/modO3/Linux.gfortran.64.mpiuni.default/"
     export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/myapps/esmf/lib/libO3/Linux.gfortran.64.mpiuni.default/:/myapps/fms/lib
-    export NETCDF_DIR=/usr NCEP_DIR=/myapps/NCEP
+    export NETCDF_DIR=/myapps/netcdf NCEP_DIR=/myapps/NCEP
+    export LAPACK_DIR=/usr
 
     cd /FV3
-    cp conf/configure.fv3.opensuse_gnu conf/configure.fv3
+    cp conf/configure.fv3.singularity conf/configure.fv3
     make clean_no_dycore
     make libs_no_dycore -j4
     cd atmos_cubed_sphere && make clean
@@ -52,4 +54,4 @@ From: /home/markc/Documents/Containers/fv3env/tumbleweed_mpich3.14.sif
     mv fv3.exe /myapps/FV3/
 
 %environment
-    export LD_LIBRARY_PATH=/myapps/esmf/lib/libO3/Linux.gfortran.64.mpiuni.default:/myapps/fms/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=/usr/lib64:/myapps/esmf/lib/libO3/Linux.gfortran.64.mpiuni.default:/myapps/fms/lib:$LD_LIBRARY_PATH

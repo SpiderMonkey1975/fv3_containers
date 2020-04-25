@@ -1,23 +1,23 @@
 Bootstrap: localimage 
-From: /home/markc/Documents/Containers/fv3env/ubuntu18_mpich3.14.sif
+From: /home/markc/Documents/fv3_containers/Singularity/fv3env/ubuntu19.10_openmpi3.sif
 
 %labels
     Author MarkC@Vulcan.com
     Label FV3atm Container
     OS Ubuntu
     Compiler GNU-9
-    MPI MPICH 3.34    
+    MPI OpenMPI 3.1.4
 
 %help
     This Singularity definition contains build instructions for the GFDL Finite Volume
     Cubed Sphere (FV3) general atmospheric circulation model and its required libraries.
 
-    The model is built with MPI distributed parallelization only using MPICH built with  
+    The model is built with MPI distributed parallelization only using OpenMPI built with  
     the GNU compiler suite.
 
     Some useful commands are:
 
-    sudo singularity build <mysingularity_name>.sif fv3atm_ubuntu_mpich3.32.def
+    sudo singularity build <mysingularity_name>.sif fv3atm_ubuntu19_openmpi3.def
     This command builds an immutable Singularity container in the new Singularity Image Format (SIF)
 
     singularity run <mysingularity_name>.sif bash
@@ -37,13 +37,13 @@ From: /home/markc/Documents/Containers/fv3env/ubuntu18_mpich3.14.sif
     ##
     ## Build the FV3 executable
     ##--------------------------
-    export FMS_DIR=/myapps/fms
-    export ESMF_INC="-I/myapps/esmf/include -I/myapps/esmf/mod/modO3/Linux.gfortran.64.mpiuni.default/"
-    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/myapps/esmf/lib/libO3/Linux.gfortran.64.mpiuni.default/:/myapps/fms/lib
+    export FMS_DIR=/usr/local
+    export ESMF_INC="-I/usr/local/include"
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usrlocal/lib:/usr/lib/x86_64-linux-gnu
     export NETCDF_DIR=/usr NCEP_DIR=/myapps/NCEP
 
     cd /FV3
-    cp conf/configure.fv3.ubuntu_gnu conf/configure.fv3
+    cp conf/configure.fv3.linux_gnu conf/configure.fv3
     make clean_no_dycore
     make libs_no_dycore -j4
     cd atmos_cubed_sphere && make clean

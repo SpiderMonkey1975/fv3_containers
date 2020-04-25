@@ -88,9 +88,8 @@ From: /home/markc/Documents/Containers/mpi_only/ubuntu18.04_mpich3.14.sif
     export CPPFLAGS="-I/myapps/netcdf/include -I/myapps/hdf5/include -Duse_LARGEFILE -DMAXFIELDMETHODS_=500"
     export FCFLAGS="-O2 -fcray-pointer -Waliasing -ffree-line-length-none -fno-range-check -fdefault-real-8 -fdefault-double-8"
 
-    mkdir -p $FMS_DIR
     cd /FMS && autoreconf --install
-    ./configure --prefix=${FMS_DIR} && make -j4
+    ./configure --disable-fortran-flag-setting --disable-shared && make -j4
     make install
     cd .. && rm -rf FMS
 
@@ -99,11 +98,12 @@ From: /home/markc/Documents/Containers/mpi_only/ubuntu18.04_mpich3.14.sif
     ##--------------------------------------
     export CXX=mpicxx ESMF_DIR=/esmf ESMF_INSTALL_PREFIX=/myapps/esmf ESMF_NETCDF_INCLUDE=/myapps/netcdf/include
     export ESMF_NETCDF_LIBS="-L/myapps/netcdf/lib -lnetcdf -lnetcdff -L/myapps/hdf5/lib -lhdf5_fortran -lhdf5" ESMF_BOPT=O3
-
+    export ESMF_SHARED_LIB_BUILD=OFF ESMF_OPENMP=ON ESMF_LAPACK="/usr/lib/liblapack.a /usr/lib/libblas.a"
+    export ESMF_INSTALL_MODDIR=include ESMF_INSTALL_LIBDIR=lib ESMF_INSTALL_BINDIR=bin
     git clone -b ESMF_8_0_0 --depth 1 https://git.code.sf.net/p/esmf/esmf $ESMF_DIR
-    export ESMF_OPENMP=OFF
     cd $ESMF_DIR && make lib -j4
 
     mkdir -p ${ESMF_INSTALL_PREFIX}
+    make -j4
     make install && make installcheck
     cd .. && rm -rf esmf

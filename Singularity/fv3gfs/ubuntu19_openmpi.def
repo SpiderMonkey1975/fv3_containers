@@ -1,23 +1,23 @@
 Bootstrap: localimage 
-From: /home/markc/Documents/fv3_containers/Singularity/fv3env/ubuntu18_mpich3.14.sif 
+From: /home/markc/Documents/fv3_containers/Singularity/fv3env/ubuntu19.10_openmpi3.sif 
 
 %labels
     Author MarkC@Vulcan.com
     Label FV3gfs Container
     OS Ubuntu
-    Compiler GNU 7
-    MPI MPICH 3.1.4
+    Compiler GNU-9
+    OpenMPI 4.0.3
 
 %help
     This Singularity definition contains build instructions for the GFDL Finite Volume
     Cubed Sphere (FV3) general atmospheric circulation model and its required libraries.
 
-    The model is built with MPI distributed parallelization only using MPICH built with
+    The model is built with MPI distributed parallelization only using OpenMPI built with
     the GNU compiler suite.
 
     Some useful commands are:
 
-    sudo singularity build <mysingularity_name>.sif ubuntu_mpich3.XX.def
+    sudo singularity build <mysingularity_name>.sif ubuntu_openmpi4.XX.def
     This command builds an immutable Singularity container in the new Singularity Image Format (SIF)
 
     singularity run <mysingularity_name>.sif bash
@@ -33,7 +33,7 @@ From: /home/markc/Documents/fv3_containers/Singularity/fv3env/ubuntu18_mpich3.14
     /home/markc/Documents/fv3gfs/sorc/fv3gfs.fd/FV3 /FV3
 
 %environment
-    export LD_LIBRARY_PATH=/myapps/hdf5/lib:/myapps/netcdf/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=/myapps/FMS/lib:/myapps/esmf/lib:$LD_LIBRARY_PATH
 
 %post
     ##

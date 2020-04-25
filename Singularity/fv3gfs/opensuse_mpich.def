@@ -1,11 +1,11 @@
 Bootstrap: localimage 
-From: /home/markc/Documents/Containers/fv3env/tumbleweed_mpich3.14.sif 
+From: /home/markc/Documents/fv3_containers/Singularity/fv3env/tumbleweed_mpich3.14.sif 
 
 %labels
     Author MarkC@Vulcan.com
     Label FV3gfs Container
     OS OpenSUSE-Tumbleweed
-    Compiler GNU-7
+    Compiler GNU-9
     MPI MPICH 3.1.4
 
 %help

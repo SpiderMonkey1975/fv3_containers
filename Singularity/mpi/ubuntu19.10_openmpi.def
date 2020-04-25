@@ -1,0 +1,32 @@
+Bootstrap: docker
+From: ubuntu:19.10
+
+%files
+   /home/markc/Documents/Containers/mpi_only/mpi_test.c /mpi_test.c 
+   /home/markc/Documents/Containers/mpi_only/mpi_hello.f90 /mpi_hello.f90
+
+%post
+    ##
+    ## Install software dependencies
+    ##--------------------------------
+    apt-get update
+    apt-get install -y wget gcc gfortran g++ make 
+
+    ##
+    ## Install MPI
+    ##--------------
+    wget -q https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.6.tar.gz 
+    tar xzf openmpi-3.1.6.tar.gz 
+    cd openmpi-3.1.6
+    ./configure 
+    make -j4 install
+    ldconfig
+    cd ..
+    rm -rf openmpi-3.1.6*
+
+    ##
+    ## Build the MPI test executables 
+    ##--------------------------------
+    mkdir -p /myapps/mpi_tests
+    mpicc -o /myapps/mpi_tests/mpi_test.x mpi_test.c
+    mpif90 -o /myapps/mpi_tests/mpi_hello.x mpi_hello.f90
